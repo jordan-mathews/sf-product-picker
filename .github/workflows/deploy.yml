@@ -1,0 +1,58 @@
+# Unique name for this workflow
+name: Deploy
+
+# When the workflow should run
+on:
+  workflow_dispatch:
+    inputs:
+      org:
+        type: choice
+        description: "The org you would like to deploy to."
+        options:
+          - prod
+          - uat
+        required: true
+
+# Jobs to be executed
+jobs:
+  deploy-to-org:
+    runs-on: ubuntu-latest
+    steps: 
+
+      # Validate branch and instance selection
+      - name: Validate input
+        shell: bash
+        run: |
+          if [ ${{ github.event.inputs.org }} == "prod" ] && [ ${{ github.ref }} != "refs/heads/master" ];then
+            echo "Only the master branch can be deployed to production."
+            exit 1
+          fi
+      # Install Salesforce CLI
+      - name: Install Salesforce CLI
+        run: |
+          wget https://developer.salesforce.com/media/salesforce-cli/sfdx-linux-amd64.tar.xz
+          mkdir sfdx-cli
+          tar xJf sfdx-linux-amd64.tar.xz -C sfdx-cli --strip-components 1
+          ./sfdx-cli/install
+      # Checkout the code in the pull request
+      - name: Checkout source code
+        uses: actions/checkout@v2
+
+      # Store secret for production dx integration user
+      - name: Populate auth file with SFDX_AUTH secret
+        shell: bash
+        run: |
+          if [ ${{ github.event.inputs.org }} == "prod" ];then
+            echo ${{ secrets.SFDX_AUTH_URL_PROD_ORG}} > ./SFDX_AUTH.txt
+            echo "'prod' was set"
+          elif [ ${{ github.event.inputs.org }} == "uat" ];then
+            echo ${{ secrets.SFDX_AUTH_URL_PROD_ORG}} > ./SFDX_AUTH.txt
+            echo "'UAT' was set"
+          fi
+      # Authenticate production dx integration user
+      - name: Authenticate Dev Hub
+        run: 'sfdx force:auth:sfdxurl:store -f ./SFDX_AUTH.txt -a sf-prod -d'
+
+      # Deploy source to production org
+      - name: Push source to production
+        run: 'sfdx force:source:deploy -u sf-prod -p force-app/main -l RunLocalTests'

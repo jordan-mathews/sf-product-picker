@@ -1,0 +1,39 @@
+# Unique name for this workflow
+name: Validate
+
+# Definition when the workflow should run
+on:
+  pull_request:
+    branches:
+      - master
+    paths:
+      - 'force-app/**'
+
+# Jobs to be executed
+jobs:
+  validate-in-production:
+    runs-on: ubuntu-latest
+    steps:
+      # Install Salesforce CLI
+      - name: Install Salesforce CLI
+        run: |
+          wget https://developer.salesforce.com/media/salesforce-cli/sfdx-linux-amd64.tar.xz
+          mkdir sfdx-cli
+          tar xJf sfdx-linux-amd64.tar.xz -C sfdx-cli --strip-components 1
+          ./sfdx-cli/install
+      # Checkout the code in the pull request
+      - name: Checkout source code
+        uses: actions/checkout@v2
+
+      # Store secret for production dx integration user
+      - name: Populate auth file with SFDX_AUTH secret
+        shell: bash
+        run: 'echo ${{ secrets.SFDX_AUTH_URL_PROD_ORG}} > ./SFDX_AUTH.txt'
+
+      # Authenticate production dx integration user
+      - name: Authenticate Dev Hub
+        run: 'sfdx force:auth:sfdxurl:store -f ./SFDX_AUTH.txt -a sf-prod -d'
+
+      # Validate deployment 
+      - name: Validate deployment
+        run: 'sfdx force:source:deploy -u sf-prod -p force-app/main -l RunLocalTests --checkonly'
