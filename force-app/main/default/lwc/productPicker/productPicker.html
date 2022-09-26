@@ -1,0 +1,14 @@
+<template>
+  <div>
+    <c-product-search></c-product-search>
+  </div>
+  <div style="height: 300px">
+    <lightning-datatable
+      key-field="id"
+      data={data}
+      columns={columns}
+      onrowselection={handleSelect}
+    >
+    </lightning-datatable>
+  </div>
+</template>

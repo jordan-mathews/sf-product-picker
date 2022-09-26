@@ -1,7 +1,9 @@
 {
   "orgName": "jordanmathews company",
   "edition": "Developer",
-  "features": ["EnableSetPasswordInApi"],
+  "country": "NO",
+  "language": "en_US",
+  "features": ["EnableSetPasswordInApi", "ServiceCloud"],
   "settings": {
     "lightningExperienceSettings": {
       "enableS1DesktopEnabled": true
